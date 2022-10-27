@@ -29,6 +29,8 @@ const (
 	TB
 )
 
+const VERSION = "1.0.0"
+
 var (
 	cert    string
 	key     string
@@ -61,6 +63,7 @@ func main() {
 	mux.Handle("/bench", handle(benchHandler, verbose))
 	mux.Handle("/api", handle(apiHandler, verbose))
 	mux.Handle("/health", handle(healthHandler, verbose))
+	mux.Handle("/version", handle(versionHandler, verbose))
 	mux.Handle("/", handle(whoamiHandler, verbose))
 
 	if cert == "" || key == "" {
@@ -233,6 +236,57 @@ func whoamiHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func versionHandler(w http.ResponseWriter, req *http.Request) {
+	hostname, _ := os.Hostname()
+
+	data := struct {
+		Hostname string   `json:"hostname,omitempty"`
+		IP       []string `json:"ip,omitempty"`
+		URL      string   `json:"url,omitempty"`
+		Host     string   `json:"host,omitempty"`
+		Version  string   `json:"version,omitempty"`
+	}{
+		Hostname: hostname,
+		IP:       []string{},
+		URL:      req.URL.RequestURI(),
+		Host:     req.Host,
+		Version:  VERSION,
+	}
+
+	ifaces, _ := net.Interfaces()
+	for _, i := range ifaces {
+		addrs, _ := i.Addrs()
+		// handle err
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if ip != nil {
+				data.IP = append(data.IP, ip.String())
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+type healthState struct {
+	StatusCode int
+}
+
+var (
+	currentHealthState = healthState{http.StatusOK}
+	mutexHealthState   = &sync.RWMutex{}
+)
+
 func apiHandler(w http.ResponseWriter, req *http.Request) {
 	hostname, _ := os.Hostname()
 
@@ -278,15 +332,6 @@ func apiHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 }
-
-type healthState struct {
-	StatusCode int
-}
-
-var (
-	currentHealthState = healthState{http.StatusOK}
-	mutexHealthState   = &sync.RWMutex{}
-)
 
 func healthHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodPost {
