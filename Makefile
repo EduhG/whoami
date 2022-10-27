@@ -1,6 +1,6 @@
 .PHONY: default check test build image
 
-IMAGE_NAME := traefik/whoami
+IMAGE_NAME := whoami
 
 default: check test build
 
@@ -14,4 +14,4 @@ check:
 	golangci-lint run
 
 image:
-	docker build -t $(IMAGE_NAME) .
+	docker build --build-arg VERSION=1 -t $(IMAGE_NAME) .

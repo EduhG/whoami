@@ -29,8 +29,6 @@ const (
 	TB
 )
 
-const VERSION = "1.0.0"
-
 var (
 	cert    string
 	key     string
@@ -238,6 +236,12 @@ func whoamiHandler(w http.ResponseWriter, req *http.Request) {
 
 func versionHandler(w http.ResponseWriter, req *http.Request) {
 	hostname, _ := os.Hostname()
+	var apiVersion = "1"
+
+	version, ok := os.LookupEnv("API_VERSION")
+	if ok {
+		apiVersion = version
+	}
 
 	data := struct {
 		Hostname string   `json:"hostname,omitempty"`
@@ -250,7 +254,7 @@ func versionHandler(w http.ResponseWriter, req *http.Request) {
 		IP:       []string{},
 		URL:      req.URL.RequestURI(),
 		Host:     req.Host,
-		Version:  VERSION,
+		Version:  apiVersion,
 	}
 
 	ifaces, _ := net.Interfaces()
