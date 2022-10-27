@@ -17,7 +17,7 @@ pipeline {
         stage('Build Image') { 
             steps { 
                 script{
-                    app = docker.build("whoami", "--build-arg VERSION=${env.BUILD_NUMBER}")
+                    app = docker.build("whoami", "--build-arg VERSION=${env.BUILD_NUMBER} .")
                 }
             }
         }
