@@ -6,7 +6,13 @@ pipeline {
     }
 
     stages {
-         stage('Clone repository') { 
+        stage("Env Variables") {
+            steps {
+                sh "printenv | sort"
+            }
+        }
+
+        stage('Clone repository') { 
             steps { 
                 script{
                     checkout scm
